@@ -1,28 +1,5 @@
 import { lazy } from 'react'
 
-/**
- * ─────────────────────────────────────────────────────────────────
- *  REGISTRO DE CATEGORÍAS Y FORMULARIOS
- * ─────────────────────────────────────────────────────────────────
- *  Para agregar un formulario nuevo, solo necesitás hacer DOS cosas:
- *
- *  1. Crear el archivo  src/components/forms/MiNuevoForm.jsx
- *     El componente debe aceptar la prop:  onGuardar(datosObjeto)
- *
- *  2. Agregar UNA entrada a este array con la forma:
- *     {
- *       value:     'mi-nuevo',
- *       label:     '🆕 Mi Nuevo Registro',
- *       sheetUrl:  'https://docs.google.com/spreadsheets/d/TU_ID/edit#gid=ID_HOJA',
- *       component: lazy(() => import('./components/forms/MiNuevoForm')),
- *     }
- *
- *  App.jsx no requiere ningún cambio.
- * ─────────────────────────────────────────────────────────────────
- */
-
-// URL base — reemplazá TU_ID_AQUI con el ID real de tu Google Sheet.
-// Cada sheetUrl debe apuntar al gid (pestaña) correspondiente.
 const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/TU_ID_AQUI/edit#gid='
 
 const registry = [
