@@ -111,6 +111,18 @@ export default function App() {
         <p className="text-center text-xs text-gray-300 mt-6 select-none">
           Mi espacio personal · {new Date().getFullYear()}
         </p>
+
+        <p className="mt-4 text-center text-xs text-[#dec790]/80">
+          Hecho por{' '}
+          <a
+            href="https://www.si-cb-vendes-mejor.com.ar"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#dec790] hover:text-[#ff0d66] transition-colors"
+          >
+            cbJamstack
+          </a>
+        </p>
       </div>
 
       {toast && (
