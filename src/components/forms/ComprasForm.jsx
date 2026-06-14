@@ -3,7 +3,7 @@ import { useState } from 'react'
 const CATEGORIAS = ['Almacén', 'Carnicería', 'Verdulería', 'Farmacia', 'Bazar', 'Limpieza', 'Otro']
 
 export default function ComprasForm({ onGuardar }) {
-  const [categoria, setCategoria] = useState('')
+  const [rubro, setRubro] = useState('')
   const [items, setItems] = useState([{ articulo: '', cantidad: '' }])
 
   const setItem = (i, k, v) =>
@@ -14,7 +14,7 @@ export default function ComprasForm({ onGuardar }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onGuardar({ categoria, items: items.filter((it) => it.articulo.trim()) })
+    onGuardar({ rubro, items: items.filter((it) => it.articulo.trim()) })
   }
 
   return (
@@ -23,8 +23,8 @@ export default function ComprasForm({ onGuardar }) {
         <label className="field-label">Categoría</label>
         <select
           className="field-select"
-          value={categoria}
-          onChange={(e) => setCategoria(e.target.value)}
+          value={rubro}
+          onChange={(e) => setRubro(e.target.value)}
           required
         >
           <option value="">Seleccionar…</option>

@@ -101,7 +101,8 @@ var SHEET_CONFIG = {
     toRows: function(ts, d) {
       if (!d.items || !d.items.length) return []
       return d.items.map(function(it) {
-        return [ ts, d.categoria, it.articulo, it.cantidad ]
+        var categoriaCompra = d.rubro || d.categoriaCompra || d.categoria
+        return [ ts, categoriaCompra, it.articulo, it.cantidad ]
       })
     }
   },
