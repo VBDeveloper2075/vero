@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-purple-50 min-h-screen font-sans text-gray-700;
+  }
+
+  select, input, textarea {
+    @apply focus:outline-none focus:ring-2 focus:ring-purple-300 transition-shadow duration-150;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-purple-100 p-5;
+  }
+
+  .field-label {
+    @apply block text-xs font-medium text-purple-400 uppercase tracking-wider mb-1;
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border border-purple-200 bg-purple-50/40 px-3 py-2 text-sm text-gray-700 placeholder-gray-400;
+  }
+
+  .field-select {
+    @apply w-full rounded-xl border border-purple-200 bg-purple-50/40 px-3 py-2 text-sm text-gray-700;
+  }
+
+  .btn-save {
+    @apply w-full mt-4 py-2.5 rounded-xl bg-purple-400 hover:bg-purple-500 active:scale-95 text-white text-sm font-semibold tracking-wide transition-all duration-150 shadow-sm;
+  }
+
+  .btn-add {
+    @apply text-xs text-purple-400 hover:text-purple-600 font-medium underline underline-offset-2 transition-colors;
+  }
+}
