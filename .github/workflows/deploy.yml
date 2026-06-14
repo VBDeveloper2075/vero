@@ -33,7 +33,7 @@ jobs:
         run: npm run build
         env:
           VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }} 
-          VITE_SHEET_BASE: ${{ vars.VITE_SHEET_BASE }}
+          VITE_SHEET_BASE: ${{ secrets.VITE_SHEET_BASE }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
