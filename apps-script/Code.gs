@@ -139,13 +139,20 @@ function doPost(e) {
     if (!raw) throw new Error('Body vacío')
 
     var data = JSON.parse(raw)
+    var secretRecibido = data.sharedSecret
+    var secretEsperado = PropertiesService.getScriptProperties().getProperty('SHARED_SECRET')
+
+    if (!secretRecibido || !secretEsperado || secretRecibido !== secretEsperado) {
+      return respuestaJSON({ ok: false, error: 'Acceso denegado' })
+    }
+
     var categoria = data.categoria
     var timestamp = data.timestamp || new Date().toISOString()
 
     // Elimina los campos de control del payload de datos
     var campos = {}
     for (var key in data) {
-      if (key !== 'categoria' && key !== 'timestamp') {
+      if (key !== 'categoria' && key !== 'timestamp' && key !== 'sharedSecret') {
         campos[key] = data[key]
       }
     }

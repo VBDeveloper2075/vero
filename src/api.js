@@ -41,6 +41,7 @@ export async function enviarDatos(categoria, datos) {
   const payload = {
     categoria,
     timestamp: new Date().toISOString(),
+    sharedSecret: import.meta.env.VITE_SHARED_SECRET,
     ...datos,
   }
 
