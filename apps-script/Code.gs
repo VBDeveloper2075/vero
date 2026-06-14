@@ -32,13 +32,9 @@ var SHEET_CONFIG = {
 
   visa: {
     nombre:  '🏷️ VISA',
-    headers: ['Timestamp', 'Fecha', 'Descripción', 'Cuota Actual', 'Total Cuotas', 'Monto ($)'],
-    // Un consumo por fila
+    headers: ['Timestamp', 'Fecha Cierre', 'Fecha Vencimiento', 'Saldo ($)', 'Saldo (u$s)', 'Pago Mínimo ($)', 'Observaciones'],
     toRows: function(ts, d) {
-      if (!d.consumos || !d.consumos.length) return []
-      return d.consumos.map(function(c) {
-        return [ ts, c.fecha, c.descripcion, c.cuotaActual, c.cuotasTotal, c.monto ]
-      })
+      return [[ ts, d.fechaCierre, d.fechaVencimiento, d.saldoPesos, d.saldoDolares, d.pagoMinimo, d.observaciones ]]
     }
   },
 
