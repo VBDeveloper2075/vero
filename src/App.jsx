@@ -1,15 +1,45 @@
-import { useState, useCallback, Suspense } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
 import Header from './components/Header'
 import Toast from './components/Toast'
+import VencimientosBanner from './components/VencimientosBanner'
 import registry from './registry'
 import { enviarDatos } from './api'
+
+function esMañana(fechaStr) {
+  if (!fechaStr) return false
+  const hoy = new Date()
+  const manana = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1)
+  // Parsear YYYY-MM-DD sin ajuste de zona horaria
+  const [y, m, d] = fechaStr.split('-').map(Number)
+  const fechaVenc = new Date(y, m - 1, d)
+  return fechaVenc.toDateString() === manana.toDateString()
+}
 
 export default function App() {
   const [categoria, setCategoria] = useState('')
   const [toast, setToast] = useState(null)
   const [enviando, setEnviando] = useState(false)
+  const [alertasVencimiento, setAlertasVencimiento] = useState([])
 
   const cerrarToast = useCallback(() => setToast(null), [])
+
+  const cerrarAlerta = useCallback((index) => {
+    setAlertasVencimiento((prev) => prev.filter((_, i) => i !== index))
+  }, [])
+
+  useEffect(() => {
+    const url = import.meta.env.VITE_BACKEND_URL
+    if (!url) return
+
+    fetch(url, { method: 'GET' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data?.vencimientos?.length) return
+        const proximos = data.vencimientos.filter((v) => esMañana(v.fechaVencimiento))
+        if (proximos.length > 0) setAlertasVencimiento(proximos)
+      })
+      .catch((err) => console.warn('[vencimientos] No se pudo obtener la lista:', err.message))
+  }, [])
 
   const handleGuardar = async (datos) => {
     setEnviando(true)
@@ -124,6 +154,8 @@ export default function App() {
           </a>
         </p>
       </div>
+
+      <VencimientosBanner vencimientos={alertasVencimiento} onCerrar={cerrarAlerta} />
 
       {toast && (
         <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={cerrarToast} />

@@ -62,7 +62,7 @@ const registry = [
   {
     value:     'compras',
     label:     '🛒 Compras',
-    sheetUrl:  sheet(''),
+    sheetUrl:  sheet('343038308'),
     component: lazy(() => import('./components/forms/ComprasForm')),
   },
   {

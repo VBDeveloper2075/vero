@@ -9,6 +9,16 @@
 
   select, input, textarea {
     @apply focus:outline-none focus:ring-2 focus:ring-purple-300 transition-shadow duration-150;
+    box-sizing: border-box;
+  }
+
+  /* Fuerza width consistente en inputs de fecha en todos los navegadores */
+  input[type="date"] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    -webkit-appearance: none;
+    appearance: none;
   }
 }
 
