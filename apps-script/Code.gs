@@ -122,12 +122,54 @@ var SHEET_CONFIG = {
 //  PUNTO DE ENTRADA — recibe el POST del frontend
 // ─────────────────────────────────────────────────────────────────
 
-function doGet() {
-  return respuestaJSON({
-    ok: true,
-    message: 'Web App activa',
-    timestamp: new Date().toISOString(),
-  })
+function doGet(e) {
+  try {
+    var config = SHEET_CONFIG.vencimientos
+    var ss = obtenerSpreadsheet()
+    var hoja = ss.getSheetByName(config.nombre)
+
+    if (!hoja) {
+      return respuestaJSON({ ok: true, vencimientos: [] })
+    }
+
+    var ultimaFila = hoja.getLastRow()
+    if (ultimaFila < 2) {
+      return respuestaJSON({ ok: true, vencimientos: [] })
+    }
+
+    // Columnas: Timestamp(1), Servicio(2), Fecha Vencimiento(3), Notas(4)
+    var filas = hoja.getRange(2, 1, ultimaFila, 4).getValues()
+    var vencimientos = []
+
+    for (var i = 0; i < filas.length; i++) {
+      var servicio = filas[i][1]
+      var fechaRaw = filas[i][2]
+
+      if (!servicio && !fechaRaw) continue
+
+      vencimientos.push({
+        servicio: String(servicio || '').trim(),
+        fechaVencimiento: formatearFechaISO(fechaRaw),
+      })
+    }
+
+    return respuestaJSON({ ok: true, vencimientos: vencimientos })
+
+  } catch (err) {
+    Logger.log('ERROR doGet: ' + err.message)
+    return respuestaJSON({ ok: false, error: err.message, vencimientos: [] })
+  }
+}
+
+/**
+ * Convierte fechas de Sheets a string ISO (yyyy-MM-dd).
+ */
+function formatearFechaISO(valor) {
+  if (!valor) return ''
+  if (valor instanceof Date && !isNaN(valor.getTime())) {
+    return Utilities.formatDate(valor, Session.getScriptTimeZone(), 'yyyy-MM-dd')
+  }
+  return String(valor).trim()
 }
 
 function doPost(e) {
