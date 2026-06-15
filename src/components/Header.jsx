@@ -76,7 +76,7 @@ export default function Header() {
 
   return (
     <div className="text-center mb-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-purple-400 mb-1">
+      <p className="text-sm font-bold uppercase tracking-widest text-purple-600 mb-1">
         {fechaCap}
       </p>
       <div className="bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3 mt-2">

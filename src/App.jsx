@@ -28,7 +28,7 @@ export default function App() {
   const FormularioActivo = entrada?.component ?? null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-yellow-50 flex justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-200 via-purple-100 to-purple-50 flex justify-center px-4 py-8">
       <div className="w-full max-w-md">
 
         <Header />
