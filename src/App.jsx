@@ -5,14 +5,32 @@ import VencimientosBanner from './components/VencimientosBanner'
 import registry from './registry'
 import { enviarDatos } from './api'
 
+function parsearFechaVencimiento(fechaStr) {
+  if (!fechaStr) return null
+
+  // Caso esperado desde input type="date": YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fechaStr)) {
+    const [y, m, d] = fechaStr.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  }
+
+  // Fallback para formatos textuales que puede devolver Sheets/Apps Script.
+  const fecha = new Date(fechaStr)
+  return Number.isNaN(fecha.getTime()) ? null : fecha
+}
+
 function esMañana(fechaStr) {
-  if (!fechaStr) return false
+  const fechaVenc = parsearFechaVencimiento(fechaStr)
+  if (!fechaVenc) return false
+
   const hoy = new Date()
   const manana = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1)
-  // Parsear YYYY-MM-DD sin ajuste de zona horaria
-  const [y, m, d] = fechaStr.split('-').map(Number)
-  const fechaVenc = new Date(y, m - 1, d)
-  return fechaVenc.toDateString() === manana.toDateString()
+
+  return (
+    fechaVenc.getFullYear() === manana.getFullYear() &&
+    fechaVenc.getMonth() === manana.getMonth() &&
+    fechaVenc.getDate() === manana.getDate()
+  )
 }
 
 export default function App() {
