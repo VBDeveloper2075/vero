@@ -18,7 +18,7 @@ cp .env.example .env
 # 3. Levantar en local
 npm run dev
 
-# 4. Build de producción (Netlify / Vercel)
+# 4. Build de producción (Netlify / Vercel, yo lo hice en GitHub Pages)
 npm run build
 ```
 
@@ -186,7 +186,8 @@ y verificalo dentro del Apps Script (no como query param).
 │   └── Code.gs         # ★ Backend completo (pegar en Apps Script)
 └── src/
     ├── api.js          # Función genérica enviarDatos(categoria, datos)
-    ├── registry.js     # ★ Único archivo a editar para agregar categorías (frontend)
+    ├── registry.js     # ★ Único archivo a editar para agregar categorías 
+    (frontend)
     ├── App.jsx         # Shell principal (no tocar para agregar formularios)
     ├── index.css       # Clases Tailwind reutilizables (card, field-input…)
     └── components/

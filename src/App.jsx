@@ -66,7 +66,7 @@ export default function App() {
       setToast({ mensaje: '¡Guardado correctamente! ✓', tipo: 'ok' })
     } catch (err) {
       console.error(err)
-      setToast({ mensaje: 'Error de conexión. No se pudo guardar el registro.', tipo: 'error' })
+      setToast({ mensaje: 'No se pudo guardar el registro.', tipo: 'error' })
     } finally {
       setEnviando(false)
     }
@@ -161,7 +161,7 @@ export default function App() {
         </p>
 
         <p className="mt-4 text-center text-xs text-[#dec790]/80">
-          Hecho por{' '}
+          Hecho con 💕 por {' '}
           <a
             href="https://www.si-cb-vendes-mejor.com.ar"
             target="_blank"
