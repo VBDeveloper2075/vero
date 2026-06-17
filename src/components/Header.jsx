@@ -17,25 +17,22 @@ function claveDiaActual() {
   return `${y}-${m}-${d}`
 }
 
-function msHastaProximaMedianoche() {
-  const ahora = new Date()
-  const proxima = new Date(ahora)
-  proxima.setHours(24, 0, 0, 0)
-  return proxima.getTime() - ahora.getTime()
-}
-
 export default function Header() {
   const [frase, setFrase] = useState(null)
   const [cargando, setCargando] = useState(true)
   const [diaClave, setDiaClave] = useState(() => claveDiaActual())
 
+  // Chequea periódicamente si cambió el día (más robusto que un único timeout:
+  // sobrevive a suspensiones/hibernación del dispositivo). Al detectar un día
+  // nuevo, actualiza diaClave y dispara el re-fetch de la frase.
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDiaClave(claveDiaActual())
-    }, msHastaProximaMedianoche() + 1000)
+    const intervalId = setInterval(() => {
+      const hoy = claveDiaActual()
+      setDiaClave((prev) => (prev === hoy ? prev : hoy))
+    }, 60 * 1000)
 
-    return () => clearTimeout(timeoutId)
-  }, [diaClave])
+    return () => clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     const cacheKey = 'fraseDelDia'
