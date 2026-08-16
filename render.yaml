@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: vero-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: DATABASE_URL
+        sync: false
+      - key: SHARED_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://vbdeveloper2075.github.io,http://localhost:5173,http://localhost:5174
