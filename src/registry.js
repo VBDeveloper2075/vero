@@ -60,6 +60,12 @@ const registry = [
     component: lazy(() => import('./components/forms/HabitosForm')),
   },
   {
+    value:     'actividadFisica',
+    label:     '🏃 Actividad Física',
+    sheetUrl:  SHEET_BASE,
+    component: lazy(() => import('./components/forms/ActividadFisicaForm')),
+  },
+  {
     value:     'compras',
     label:     '🛒 Compras',
     sheetUrl:  sheet('343038308'),

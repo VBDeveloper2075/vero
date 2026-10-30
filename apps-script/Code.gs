@@ -19,6 +19,33 @@
 //  App.jsx y api.js no requieren cambios en el backend.
 // ─────────────────────────────────────────────────────────────────
 
+// Conceptos = columnas del cuadro de doble entrada (Presupuesto YYYY)
+var PAGOS_CONCEPTOS = [
+  'GARAGE',
+  'AYSA',
+  'GAS',
+  'Muni3F',
+  'Muni patente',
+  'Celu (pers)',
+  'Agip nuñez',
+  'copilot',
+  'GitHub',
+  'Gemini One',
+  'Sitas Cuota',
+  'Sitas locker'
+]
+
+var MESES_ES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+]
+
+// Abreviaturas de mes para la matriz de actividad fisica (columnas)
+var MESES_ABREV = ['E', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D']
+
+// Orden estable al fusionar codigos en una misma celda
+var CODIGOS_EJERCICIO = ['C', 'g', 'nat', 'str', 'y']
+
 var SHEET_CONFIG = {
 
   pagos: {
@@ -27,6 +54,10 @@ var SHEET_CONFIG = {
     // Retorna un array de filas. Simple = una sola fila.
     toRows: function(ts, d) {
       return [[ ts, d.fecha, d.concepto, d.monto ]]
+    },
+    // Además del log, suma el monto en la matriz mes × concepto
+    afterSave: function(ts, d) {
+      actualizarMatrizPresupuesto(d)
     }
   },
 
@@ -48,12 +79,12 @@ var SHEET_CONFIG = {
 
   limpieza: {
     nombre:  '🧹 Limpieza',
-    headers: ['Timestamp', 'Tarea', 'Completada'],
+    headers: ['Timestamp', 'Tarea', 'Completada', 'Notas'],
     // Una tarea por fila
     toRows: function(ts, d) {
       if (!d.tareas || !d.tareas.length) return []
       return d.tareas.map(function(t) {
-        return [ ts, t.texto, t.hecho ? 'Sí' : 'No' ]
+        return [ ts, t.texto, t.hecho ? 'Sí' : 'No', d.notas || '' ]
       })
     }
   },
@@ -94,6 +125,18 @@ var SHEET_CONFIG = {
     }
   },
 
+  actividadFisica: {
+    nombre:  '🏃 Actividad Física',
+    headers: ['Timestamp', 'Fecha', 'Actividades'],
+    toRows: function(ts, d) {
+      var codigos = d.actividades || []
+      return [[ ts, d.fecha, codigos.join(' ') ]]
+    },
+    afterSave: function(ts, d) {
+      actualizarMatrizEjercicios(d)
+    }
+  },
+
   compras: {
     nombre:  '🛒 Compras',
     headers: ['Timestamp', 'Categoría', 'Artículo', 'Cantidad'],
@@ -111,7 +154,16 @@ var SHEET_CONFIG = {
     nombre:  '🌿 Hobbies',
     headers: ['Timestamp', 'Actividad', 'Notas'],
     toRows: function(ts, d) {
-      return [[ ts, d.actividad, d.notas ]]
+      var actividad = ''
+      if (d.hobbies && d.hobbies.length) {
+        actividad = d.hobbies.join(' | ')
+      } else {
+        actividad = d.actividad || ''
+      }
+      return [[ ts, actividad, d.notas || '' ]]
+    },
+    afterSave: function(ts, d) {
+      actualizarMatrizHobbies(d)
     }
   }
 
@@ -207,6 +259,10 @@ function doPost(e) {
     var hoja = obtenerOCrearHoja(config.nombre, config.headers)
     agregarFilas(hoja, filas)
 
+    if (typeof config.afterSave === 'function') {
+      config.afterSave(timestamp, campos)
+    }
+
     return respuestaJSON({ ok: true, message: 'Guardado correctamente', filas: filas.length })
 
   } catch (err) {
@@ -282,9 +338,340 @@ function formatearEncabezados(hoja, cantColumnas) {
   hoja.autoResizeColumns(1, cantColumnas)
 }
 
+// ─────────────────────────────────────────────────────────────────
+//  MATRIZ PRESUPUESTO (mes × concepto)
+// ─────────────────────────────────────────────────────────────────
+
+function normalizarConcepto(texto) {
+  return String(texto || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
 /**
- * Devuelve una respuesta JSON con los headers CORS necesarios.
+ * Interpreta la fecha del formulario (yyyy-MM-dd) sin desfases por zona horaria.
  */
+function parsearFechaPago(valor) {
+  if (!valor) return null
+  if (valor instanceof Date && !isNaN(valor.getTime())) return valor
+
+  var s = String(valor).trim()
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  }
+
+  var d = new Date(s)
+  return isNaN(d.getTime()) ? null : d
+}
+
+function nombreHojaPresupuesto(anio) {
+  return '📊 Presupuesto ' + anio
+}
+
+/**
+ * Crea (si hace falta) la hoja de doble entrada del año:
+ * fila 1 = año + conceptos + Total · filas 2–13 = meses.
+ */
+function obtenerOCrearMatrizPresupuesto(anio) {
+  var ss = obtenerSpreadsheet()
+  var nombre = nombreHojaPresupuesto(anio)
+  var hoja = ss.getSheetByName(nombre)
+  if (hoja) return hoja
+
+  hoja = ss.insertSheet(nombre)
+  var headers = [String(anio)].concat(PAGOS_CONCEPTOS).concat(['Total'])
+  var nCols = headers.length
+
+  hoja.getRange(1, 1, 1, nCols).setValues([headers])
+  formatearEncabezados(hoja, nCols)
+
+  for (var i = 0; i < MESES_ES.length; i++) {
+    var row = i + 2
+    hoja.getRange(row, 1).setValue(MESES_ES[i])
+    // Total = suma de conceptos (columnas B … penúltima)
+    hoja.getRange(row, nCols).setFormulaR1C1('=SUM(RC2:RC' + (nCols - 1) + ')')
+  }
+
+  hoja.getRange(2, 2, 13, nCols).setNumberFormat('#,##0.00')
+  hoja.setFrozenColumns(1)
+  hoja.autoResizeColumns(1, nCols)
+  return hoja
+}
+
+/**
+ * Suma el monto del pago en la celda [mes, concepto] de la matriz del año.
+ * Si el concepto no existe como columna, lo inserta antes de Total.
+ */
+function actualizarMatrizPresupuesto(d) {
+  var fecha = parsearFechaPago(d.fecha)
+  if (!fecha) throw new Error('Fecha inválida para la matriz de presupuesto')
+
+  var anio = fecha.getFullYear()
+  var mesNombre = MESES_ES[fecha.getMonth()]
+  var monto = Number(String(d.monto).replace(',', '.'))
+  if (isNaN(monto)) monto = 0
+
+  var hoja = obtenerOCrearMatrizPresupuesto(anio)
+  var lastRow = Math.max(hoja.getLastRow(), 2)
+  var lastCol = Math.max(hoja.getLastColumn(), 2)
+
+  // Buscar fila del mes
+  var labels = hoja.getRange(1, 1, lastRow, 1).getValues()
+  var row = -1
+  for (var i = 1; i < labels.length; i++) {
+    if (String(labels[i][0]).trim().toLowerCase() === mesNombre) {
+      row = i + 1
+      break
+    }
+  }
+  if (row < 0) throw new Error('No se encontró el mes "' + mesNombre + '" en la matriz')
+
+  // Buscar columna del concepto (ignora "Total")
+  var headers = hoja.getRange(1, 1, 1, lastCol).getValues()[0]
+  var conceptoNorm = normalizarConcepto(d.concepto)
+  var col = -1
+  var totalCol = -1
+
+  for (var c = 0; c < headers.length; c++) {
+    var h = String(headers[c]).trim()
+    if (h.toLowerCase() === 'total') {
+      totalCol = c + 1
+      continue
+    }
+    if (c === 0) continue // columna del año
+    if (normalizarConcepto(h) === conceptoNorm) {
+      col = c + 1
+      break
+    }
+  }
+
+  // Concepto nuevo → insertar columna antes de Total
+  if (col < 0) {
+    if (totalCol > 0) {
+      hoja.insertColumnBefore(totalCol)
+      col = totalCol
+    } else {
+      col = lastCol + 1
+    }
+    hoja.getRange(1, col).setValue(d.concepto)
+    hoja.getRange(1, col).setFontWeight('bold').setBackground('#E6E6FA')
+  }
+
+  var cell = hoja.getRange(row, col)
+  var actual = cell.getValue()
+  var prev = typeof actual === 'number' ? actual : Number(actual) || 0
+  cell.setValue(prev + monto)
+  cell.setNumberFormat('#,##0.00')
+}
+
+// Matriz ejercicios: dia x mes
+
+function nombreHojaEjercicios(anio) {
+  return 'Ejercicios ' + anio
+}
+
+function diasEnMes(anio, mesIdx) {
+  return new Date(anio, mesIdx + 1, 0).getDate()
+}
+
+// Crea la hoja anual si no existe (dias 1-31 x meses E..D)
+function obtenerOCrearMatrizEjercicios(anio) {
+  var ss = obtenerSpreadsheet()
+  var nombre = nombreHojaEjercicios(anio)
+  var hoja = ss.getSheetByName(nombre)
+  if (hoja) return hoja
+
+  hoja = ss.insertSheet(nombre)
+  var headers = ['dia'].concat(MESES_ABREV)
+  var nCols = headers.length
+
+  hoja.getRange(1, 1, 1, nCols).setValues([headers])
+  formatearEncabezados(hoja, nCols)
+
+  var dia
+  var row
+  var m
+  for (dia = 1; dia <= 31; dia++) {
+    row = dia + 1
+    hoja.getRange(row, 1).setValue(dia)
+    for (m = 0; m < 12; m++) {
+      if (dia > diasEnMes(anio, m)) {
+        hoja.getRange(row, m + 2).setValue('--')
+      }
+    }
+  }
+
+  hoja.setFrozenColumns(1)
+  hoja.autoResizeColumns(1, nCols)
+  return hoja
+}
+
+// Une codigos nuevos con los existentes, sin duplicar
+function fusionarCodigosEjercicio(existente, nuevos) {
+  var vistos = {}
+  var orden = []
+  var i
+  var c
+  var partes
+  var lista
+  var ordenados
+
+  function agregar(codigo) {
+    c = String(codigo || '').trim()
+    if (!c || c === '--') return
+    if (vistos[c]) return
+    vistos[c] = true
+    orden.push(c)
+  }
+
+  partes = String(existente || '').split(/\s+/)
+  for (i = 0; i < partes.length; i++) {
+    agregar(partes[i])
+  }
+
+  lista = nuevos || []
+  for (i = 0; i < lista.length; i++) {
+    agregar(lista[i])
+  }
+
+  ordenados = []
+  for (i = 0; i < CODIGOS_EJERCICIO.length; i++) {
+    c = CODIGOS_EJERCICIO[i]
+    if (vistos[c]) ordenados.push(c)
+  }
+  for (i = 0; i < orden.length; i++) {
+    c = orden[i]
+    if (CODIGOS_EJERCICIO.indexOf(c) < 0) ordenados.push(c)
+  }
+  return ordenados.join(' ')
+}
+
+// Suma (fusiona) las actividades del dia en la celda [dia, mes]
+function actualizarMatrizEjercicios(d) {
+  var fecha = parsearFechaPago(d.fecha)
+  if (!fecha) throw new Error('Fecha invalida para la matriz de ejercicios')
+
+  var anio = fecha.getFullYear()
+  var mesIdx = fecha.getMonth()
+  var dia = fecha.getDate()
+  var actividades = d.actividades || []
+  if (!actividades.length) throw new Error('No hay actividades para guardar')
+
+  if (dia > diasEnMes(anio, mesIdx)) {
+    throw new Error('Dia invalido para el mes seleccionado')
+  }
+
+  var hoja = obtenerOCrearMatrizEjercicios(anio)
+  var row = dia + 1
+  var col = mesIdx + 2
+
+  var cell = hoja.getRange(row, col)
+  var actual = cell.getValue()
+  if (String(actual).trim() === '--') {
+    throw new Error('Esa fecha no existe en el calendario')
+  }
+
+  cell.setValue(fusionarCodigosEjercicio(actual, actividades))
+}
+
+// Matriz hobbies: dia x mes (misma estructura que ejercicios)
+
+function nombreHojaHobbies(anio) {
+  return 'Hobbies ' + anio
+}
+
+function obtenerOCrearMatrizHobbies(anio) {
+  var ss = obtenerSpreadsheet()
+  var nombre = nombreHojaHobbies(anio)
+  var hoja = ss.getSheetByName(nombre)
+  if (hoja) return hoja
+
+  hoja = ss.insertSheet(nombre)
+  var headers = ['dia'].concat(MESES_ABREV)
+  var nCols = headers.length
+
+  hoja.getRange(1, 1, 1, nCols).setValues([headers])
+  formatearEncabezados(hoja, nCols)
+
+  var dia
+  var row
+  var m
+  for (dia = 1; dia <= 31; dia++) {
+    row = dia + 1
+    hoja.getRange(row, 1).setValue(dia)
+    for (m = 0; m < 12; m++) {
+      if (dia > diasEnMes(anio, m)) {
+        hoja.getRange(row, m + 2).setValue('--')
+      }
+    }
+  }
+
+  hoja.setFrozenColumns(1)
+  hoja.autoResizeColumns(1, nCols)
+  return hoja
+}
+
+// Une hobbies con separador " | " para permitir nombres con espacios
+function fusionarHobbies(existente, nuevos) {
+  var vistos = {}
+  var orden = []
+  var i
+  var nombre
+  var partes
+  var lista
+
+  function agregar(valor) {
+    nombre = String(valor || '').trim()
+    if (!nombre || nombre === '--') return
+    if (vistos[nombre]) return
+    vistos[nombre] = true
+    orden.push(nombre)
+  }
+
+  partes = String(existente || '').split(/\s*\|\s*/)
+  for (i = 0; i < partes.length; i++) {
+    agregar(partes[i])
+  }
+
+  lista = nuevos || []
+  for (i = 0; i < lista.length; i++) {
+    agregar(lista[i])
+  }
+
+  return orden.join(' | ')
+}
+
+function actualizarMatrizHobbies(d) {
+  var fecha = parsearFechaPago(d.fecha)
+  if (!fecha) throw new Error('Fecha invalida para la matriz de hobbies')
+
+  var anio = fecha.getFullYear()
+  var mesIdx = fecha.getMonth()
+  var dia = fecha.getDate()
+  var lista = d.hobbies || []
+  if (!lista.length && d.actividad) lista = [d.actividad]
+  if (!lista.length) throw new Error('No hay hobbies para guardar')
+
+  if (dia > diasEnMes(anio, mesIdx)) {
+    throw new Error('Dia invalido para el mes seleccionado')
+  }
+
+  var hoja = obtenerOCrearMatrizHobbies(anio)
+  var row = dia + 1
+  var col = mesIdx + 2
+
+  var cell = hoja.getRange(row, col)
+  var actual = cell.getValue()
+  if (String(actual).trim() === '--') {
+    throw new Error('Esa fecha no existe en el calendario')
+  }
+
+  cell.setValue(fusionarHobbies(actual, lista))
+}
+
+// Respuesta JSON
 function respuestaJSON(objeto) {
   var json = JSON.stringify(objeto)
   return ContentService

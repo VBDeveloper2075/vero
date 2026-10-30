@@ -1,10 +1,20 @@
 import { useState } from 'react'
 
-const SUGERIDAS = ['Limpiar airfryer', 'Planchar blusas', 'Lavar ventanas', 'Limpiar baño', 'Aspirar alfombras', 'Ordenar placard']
+const SUGERIDAS = [
+  'Limpiar airfryer',
+  'Lavar vidrios',
+  'Hacer milanesas de pollo',
+  'Hacer albóndigas',
+  'Limpiar los tachos de basura',
+  'Repasar la heladera',
+  'Limpiar la sanguchera',
+  'Limpiar microondas',
+]
 
 export default function LimpiezaForm({ onGuardar }) {
   const [tareas, setTareas] = useState(SUGERIDAS.map((t) => ({ texto: t, hecho: false })))
   const [nueva, setNueva] = useState('')
+  const [notas, setNotas] = useState('')
 
   const toggle = (i) =>
     setTareas((prev) => prev.map((t, idx) => (idx === i ? { ...t, hecho: !t.hecho } : t)))
@@ -20,7 +30,7 @@ export default function LimpiezaForm({ onGuardar }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onGuardar({ tareas })
+    onGuardar({ tareas, notas })
   }
 
   return (
@@ -64,6 +74,17 @@ export default function LimpiezaForm({ onGuardar }) {
         >
           +
         </button>
+      </div>
+
+      <div>
+        <label className="field-label">Notas</label>
+        <textarea
+          rows={3}
+          placeholder="Detalles, recordatorios…"
+          className="field-input resize-none leading-relaxed"
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+        />
       </div>
 
       <button type="submit" className="btn-save">Guardar lista</button>
