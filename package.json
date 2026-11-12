@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node server/index.js",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "db:setup": "node server/migrate.js"
   },
   "engines": {
     "node": ">=18"

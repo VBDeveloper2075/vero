@@ -46,4 +46,11 @@
   .btn-add {
     @apply text-xs text-purple-400 hover:text-purple-600 font-medium underline underline-offset-2 transition-colors;
   }
+
+  .btn-historial {
+    @apply w-full mb-4 py-2.5 rounded-xl border-2 border-purple-300 bg-white text-purple-600 text-sm font-semibold
+      transition-colors duration-200 shadow-sm
+      hover:bg-purple-500 hover:text-white hover:border-purple-500
+      active:scale-[0.99];
+  }
 }

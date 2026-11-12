@@ -85,3 +85,87 @@ export async function enviarDatos(categoria, datos) {
 
   return result
 }
+
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-Shared-Secret': import.meta.env.VITE_SHARED_SECRET || '',
+  }
+}
+
+async function parseApiResponse(response) {
+  const rawBody = await response.text()
+  const bodyPreview = rawBody?.slice(0, 240) || '(vacía)'
+
+  if (!response.ok) {
+    throw new Error(
+      `Error HTTP ${response.status} ${response.statusText}. ` +
+      `Respuesta del servidor: ${bodyPreview}`
+    )
+  }
+
+  if (!rawBody) return { ok: true }
+
+  let result
+  try {
+    result = JSON.parse(rawBody)
+  } catch {
+    throw new Error(`La respuesta del backend no es JSON válido. Respuesta recibida: ${bodyPreview}`)
+  }
+
+  if (result?.ok === false) {
+    throw new Error(result.message || result.error || 'Error del backend')
+  }
+
+  return result
+}
+
+/** Lista registros guardados de una categoría (más recientes primero en el server). */
+export async function listarRegistros(categoria) {
+  if (!BACKEND_URL) throw new Error('Backend no configurado. Revisá el archivo .env.')
+
+  const url = `${BACKEND_URL.replace(/\/$/, '')}/registros/${encodeURIComponent(categoria)}`
+  let response
+  try {
+    response = await fetch(url, { method: 'GET', headers: authHeaders() })
+  } catch {
+    throw new Error('Error de red al cargar el historial.')
+  }
+
+  const data = await parseApiResponse(response)
+  return data.registros || []
+}
+
+export async function actualizarRegistro(categoria, id, datos) {
+  if (!BACKEND_URL) throw new Error('Backend no configurado.')
+
+  const url = `${BACKEND_URL.replace(/\/$/, '')}/registros/${encodeURIComponent(categoria)}/${id}`
+  const body = { ...datos, sharedSecret: import.meta.env.VITE_SHARED_SECRET }
+
+  let response
+  try {
+    response = await fetch(url, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    })
+  } catch {
+    throw new Error('Error de red al actualizar.')
+  }
+
+  return parseApiResponse(response)
+}
+
+export async function borrarRegistro(categoria, id) {
+  if (!BACKEND_URL) throw new Error('Backend no configurado.')
+
+  const url = `${BACKEND_URL.replace(/\/$/, '')}/registros/${encodeURIComponent(categoria)}/${id}`
+  let response
+  try {
+    response = await fetch(url, { method: 'DELETE', headers: authHeaders() })
+  } catch {
+    throw new Error('Error de red al eliminar.')
+  }
+
+  return parseApiResponse(response)
+}

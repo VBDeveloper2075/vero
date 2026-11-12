@@ -30,6 +30,7 @@ export default function ActividadFisicaForm({ onGuardar }) {
     e.preventDefault()
     if (!seleccionadas.length) return
     onGuardar({ fecha, actividades: seleccionadas })
+    setSeleccionadas([])
   }
 
   return (
@@ -79,6 +80,7 @@ export default function ActividadFisicaForm({ onGuardar }) {
       >
         Guardar actividad
       </button>
+
     </form>
   )
 }

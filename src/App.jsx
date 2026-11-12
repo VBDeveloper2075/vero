@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, Suspense } from 'react'
 import Header from './components/Header'
 import Toast from './components/Toast'
 import VencimientosBanner from './components/VencimientosBanner'
+import HistorialPanel from './components/HistorialPanel'
 import registry from './registry'
 import { enviarDatos } from './api'
 
@@ -38,6 +39,7 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [enviando, setEnviando] = useState(false)
   const [alertasVencimiento, setAlertasVencimiento] = useState([])
+  const [historialAbierto, setHistorialAbierto] = useState(false)
 
   const cerrarToast = useCallback(() => setToast(null), [])
 
@@ -47,9 +49,13 @@ export default function App() {
 
   useEffect(() => {
     const url = import.meta.env.VITE_BACKEND_URL
-    if (!url) return
+    const secret = import.meta.env.VITE_SHARED_SECRET
+    if (!url || !secret) return
 
-    fetch(url, { method: 'GET' })
+    fetch(url, {
+      method: 'GET',
+      headers: { 'X-Shared-Secret': secret },
+    })
       .then((r) => r.json())
       .then((data) => {
         if (!data?.vencimientos?.length) return
@@ -80,6 +86,14 @@ export default function App() {
       <div className="w-full max-w-md">
 
         <Header />
+
+        <button
+          type="button"
+          className="btn-historial"
+          onClick={() => setHistorialAbierto(true)}
+        >
+          📋 Ver historial guardado
+        </button>
 
         <div className="card">
           {/* Selector de categoría */}
@@ -174,6 +188,12 @@ export default function App() {
       </div>
 
       <VencimientosBanner vencimientos={alertasVencimiento} onCerrar={cerrarAlerta} />
+
+      <HistorialPanel
+        abierto={historialAbierto}
+        onCerrar={() => setHistorialAbierto(false)}
+        onAviso={(mensaje, tipo) => setToast({ mensaje, tipo })}
+      />
 
       {toast && (
         <Toast mensaje={toast.mensaje} tipo={toast.tipo} onClose={cerrarToast} />
