@@ -34,8 +34,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }} 
-          VITE_SHEET_BASE: ${{ secrets.VITE_SHEET_BASE }}
+          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
           VITE_SHARED_SECRET: ${{ secrets.VITE_SHARED_SECRET }}
 
       - name: Setup Pages
