@@ -34,7 +34,10 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_BACKEND_URL: ${{ vars.VITE_BACKEND_URL }}
+          # URL pública de la API en Render (no es secreta). Fija en el workflow para que
+          # no dependa de una variable de GitHub desactualizada (antes apuntaba a Apps Script).
+          VITE_BACKEND_URL: https://vero-api-bo4a.onrender.com
+          # Debe ser IDÉNTICO al SHARED_SECRET configurado en Render.
           VITE_SHARED_SECRET: ${{ secrets.VITE_SHARED_SECRET }}
 
       - name: Setup Pages

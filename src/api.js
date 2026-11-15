@@ -20,6 +20,12 @@ if (!BACKEND_URL) {
     '[api] VITE_BACKEND_URL no está configurada. ' +
     'Copiá .env.example a .env y completá la URL de tu API.'
   )
+} else if (/script\.google\.com/i.test(BACKEND_URL)) {
+  // El historial usa rutas REST (/registros/...) que Apps Script no ofrece.
+  console.warn(
+    '[api] VITE_BACKEND_URL apunta a Google Apps Script, pero la app usa la API Express ' +
+    '(Render/Neon). Actualizá la variable al URL del servidor, ej. https://vero-api-bo4a.onrender.com'
+  )
 }
 
 /**
