@@ -43,6 +43,10 @@ export default function App() {
 
   const cerrarToast = useCallback(() => setToast(null), [])
 
+  // Identidad estable: si cambia en cada render, HistorialPanel recarga en bucle.
+  const avisar = useCallback((mensaje, tipo) => setToast({ mensaje, tipo }), [])
+  const cerrarHistorial = useCallback(() => setHistorialAbierto(false), [])
+
   const cerrarAlerta = useCallback((index) => {
     setAlertasVencimiento((prev) => prev.filter((_, i) => i !== index))
   }, [])
@@ -191,8 +195,8 @@ export default function App() {
 
       <HistorialPanel
         abierto={historialAbierto}
-        onCerrar={() => setHistorialAbierto(false)}
-        onAviso={(mensaje, tipo) => setToast({ mensaje, tipo })}
+        onCerrar={cerrarHistorial}
+        onAviso={avisar}
       />
 
       {toast && (

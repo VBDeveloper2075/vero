@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import registry from '../registry'
 import { listarRegistros, actualizarRegistro, borrarRegistro } from '../api'
 import TextoConEnlaces, { textoContieneUrl } from '../utils/TextoConEnlaces'
@@ -134,20 +134,31 @@ export default function HistorialPanel({ abierto, onCerrar, onAviso }) {
   const [guardando, setGuardando] = useState(false)
   const [matrizRev, setMatrizRev] = useState(0)
 
+  const [errorCarga, setErrorCarga] = useState(null)
+
+  // onAviso va por ref: así `cargar` no cambia aunque el padre pase otra función
+  // y no se dispara un nuevo fetch (bucle) cada vez que se muestra un aviso.
+  const onAvisoRef = useRef(onAviso)
+  useEffect(() => {
+    onAvisoRef.current = onAviso
+  }, [onAviso])
+
   const cargar = useCallback(async () => {
     if (!desbloqueado || !categoria) return
     setCargando(true)
+    setErrorCarga(null)
     try {
       const data = await listarRegistros(categoria)
       setRegistros(ordenarRegistros(data))
       if (categoria === 'actividadFisica') setMatrizRev((n) => n + 1)
     } catch (err) {
-      onAviso?.(err.message || 'No se pudo cargar el historial', 'error')
+      // El error se muestra inline con botón "Reintentar"; sin toast ni reintento automático.
+      setErrorCarga(err.message || 'No se pudo cargar el historial')
       setRegistros([])
     } finally {
       setCargando(false)
     }
-  }, [categoria, desbloqueado, onAviso])
+  }, [categoria, desbloqueado])
 
   useEffect(() => {
     if (abierto && desbloqueado) cargar()
@@ -161,6 +172,7 @@ export default function HistorialPanel({ abierto, onCerrar, onAviso }) {
       setEditId(null)
       setExpandidoId(null)
       setRegistros([])
+      setErrorCarga(null)
     }
   }, [abierto])
 
@@ -200,11 +212,11 @@ export default function HistorialPanel({ abierto, onCerrar, onAviso }) {
     setGuardando(true)
     try {
       await actualizarRegistro(categoria, editId, borrador)
-      onAviso?.('Registro actualizado ✓', 'ok')
+      onAvisoRef.current?.('Registro actualizado ✓', 'ok')
       setEditId(null)
       await cargar()
     } catch (err) {
-      onAviso?.(err.message || 'No se pudo guardar', 'error')
+      onAvisoRef.current?.(err.message || 'No se pudo guardar', 'error')
     } finally {
       setGuardando(false)
     }
@@ -214,12 +226,12 @@ export default function HistorialPanel({ abierto, onCerrar, onAviso }) {
     if (!window.confirm('¿Eliminar este registro? No se puede deshacer.')) return
     try {
       await borrarRegistro(categoria, id)
-      onAviso?.('Registro eliminado', 'ok')
+      onAvisoRef.current?.('Registro eliminado', 'ok')
       if (editId === id) cancelarEdicion()
       if (expandidoId === id) setExpandidoId(null)
       await cargar()
     } catch (err) {
-      onAviso?.(err.message || 'No se pudo eliminar', 'error')
+      onAvisoRef.current?.(err.message || 'No se pudo eliminar', 'error')
     }
   }
 
@@ -298,7 +310,19 @@ export default function HistorialPanel({ abierto, onCerrar, onAviso }) {
               {cargando && (
                 <p className="text-xs text-purple-400 text-center py-6 animate-pulse">Cargando…</p>
               )}
-              {!cargando && registros.length === 0 && (
+              {!cargando && errorCarga && (
+                <div className="text-center py-6 space-y-3">
+                  <p className="text-xs text-red-500 px-2">{errorCarga}</p>
+                  <button
+                    type="button"
+                    onClick={cargar}
+                    className="text-xs font-semibold text-purple-600 border border-purple-200 rounded-lg px-3 py-1.5 hover:bg-purple-50"
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              )}
+              {!cargando && !errorCarga && registros.length === 0 && (
                 <p className="text-xs text-gray-400 text-center py-8">No hay registros en {labelCat}</p>
               )}
               {!cargando &&
